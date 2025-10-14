@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+# so its telling kubernetes to using api version apps/v1 to create a deployment
+kind: Deployment
+# the resource used here is deployment for stateless applications...
+# info about deployments...
+metadata:
+# assigning a name:
+  name: nginx-deployment
+
+# the ideal state the deployment or the resource shall be in , in this case its deployment, shall be in:
+#  It tells Kubernetes exactly what you want your final application to look like and how to keep it running.
+
+spec:
+  replicas: 3  # Number of Pod copies
+  # The Deployment constantly scans the cluster for Pods that have the label app: nginx. This is how it knows which Pods to count towards its replicas goal. This field is crucial because it connects the Deployment resource to the Pod resources.
+  # The selector's matchLabels must match the labels in the Pod template below.
+  selector:
+    matchLabels:
+      app: nginx
+  template:  # Pod template
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+        # this is advanced stuff..
+        # soft limits: containers that have memory and cpu requests defined are guaranteed to get those resources when they need them.
+        # hard limits: containers that have memory and cpu limits defined are not allowed to use more
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"

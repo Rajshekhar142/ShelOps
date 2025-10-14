@@ -1,0 +1,32 @@
+apiVersion: v1
+
+kind: Pod
+
+metadata:
+  name: web-with-logger
+
+spec:
+  containers:
+  - name: web-app
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: shared-logs
+      mountPath: /var/log/nginx
+
+# Sidecar container for logging
+  - name: log-shipper
+    image: busybox
+    args: [/bin/sh, -c, 'tail -f /logs/access.log']
+    volumeMounts:
+    - name: shared-logs
+      mountPath: /logs
+
+
+  volumes:
+    - name: shared-logs
+      emptyDir: {}
+
+# This Pod defines a main web application container (nginx) and a sidecar container (busybox) for logging.
+# this still ain't the best way since if this pod fails the there is not auto restart or healing?
