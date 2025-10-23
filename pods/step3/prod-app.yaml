@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  namespace: prod # <-- This one is in 'prod'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app-prod
+  template:
+    metadata:
+      labels:
+        app: my-app-prod # <-- A different label for the selector
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
