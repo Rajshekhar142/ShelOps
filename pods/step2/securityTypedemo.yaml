@@ -1,0 +1,91 @@
+# Example: All Service Types for a Simple App
+
+# 1. ClusterIP (Default) - Internal only
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-internal
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: my-app
+# Access: Only from within cluster at http://my-app-internal
+
+---
+# 2. NodePort - Expose on each node's IP
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-nodeport
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8080
+    nodePort: 30080  # Optional: K8s will assign one if not specified (30000-32767)
+  selector:
+    app: my-app
+# Access: http://<any-node-ip>:30080
+# Use case: Testing, on-prem without load balancer
+
+---
+# 3. LoadBalancer - Cloud provider's load balancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-loadbalancer
+  annotations:
+    # Cloud-specific annotations
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"  # AWS
+    # cloud.google.com/load-balancer-type: "Internal"  # GCP
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: my-app
+# Access: http://<external-ip> (auto-assigned by cloud)
+# Use case: Production internet-facing apps
+
+---
+# 4. Headless Service - No load balancing, direct Pod IPs
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-headless
+spec:
+  clusterIP: None  # This makes it headless!
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: my-app
+# Access: DNS returns all Pod IPs, not a virtual IP
+# Use case: StatefulSets, peer-to-peer communication
+
+---
+# Sample Deployment to use with these services
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: app
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080

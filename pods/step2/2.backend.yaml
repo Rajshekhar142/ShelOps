@@ -1,0 +1,91 @@
+# Backend API Deployment
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  DATABASE_HOST: postgres  # Service name! K8s DNS resolves this
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: myappdb
+  API_PORT: "8080"
+  LOG_LEVEL: "info"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 3  # Scale horizontally for high availability
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        version: v1
+    spec:
+      containers:
+      - name: api
+        image: myorg/backend-api:v1.2.0  # Your backend image
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: DATABASE_USER
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config
+              key: POSTGRES_USER
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        envFrom:
+        - configMapRef:
+            name: backend-config
+        
+        # Health checks (we'll cover these in detail next!)
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+
+---
+# Service to expose backend internally
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  type: ClusterIP  # Internal only
+  ports:
+  - port: 80        # Service port (what other pods use)
+    targetPort: 8080  # Container port (where your app listens)
+    protocol: TCP
+    name: http
+  selector:
+    app: backend  # Routes to Pods with this label

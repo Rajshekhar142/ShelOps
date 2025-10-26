@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: data-migration
+spec:
+  template:
+    spec:
+      containers:
+      - name: migration
+        image: my-migration-tool:latest
+        command: ["python", "migrate.py"]
+      restartPolicy: Never
+  backoffLimit: 4

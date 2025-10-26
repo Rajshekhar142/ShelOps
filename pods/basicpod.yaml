@@ -8,6 +8,7 @@ metadata:
     app: nginx
 
 spec:
+# defines the desired state of the pod
   containers:
     - name: nginx
       image: nginx:latest
